@@ -4,6 +4,9 @@
 # loosly based on: https://maclabs.jazzace.ca/2020/11/01/unistalling-adobe-apps.html
 # and https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/using/uninstall-creative-cloud-products.ug.html
 
+# Save current IFS state
+OLDIFS=${IFS}
+
 function removeAdobeApps {
 
   uninstallDir="/Library/Application Support/Adobe/Uninstall"
@@ -26,31 +29,12 @@ function removeAdobeApps {
       fi
     done
 
-    unset IFS
+    # Restore IFS to previous state
+    IFS=${OLDIFS}
   else
     echo "No Adobe apps found to uninstall"
   fi
   
-}
-
-function removeAdobeAppsOld {
-
-adobeAppList=$(find "/Library/Application Support/Adobe/Uninstall" -type d -maxdepth 1 -name "*.app")
-
-IFS=$'\n'
-
-for i in ${adobeAppList}; do
-  appName=$(echo "${i}" | cut -d "/" -f6 | cut -d "." -f1)
-  echo "Processing ${appName}"
-  appCode=$(echo "${appName}" | cut -d "_" -f1)
-  echo "App Code: ${appCode}"
-  appVersion=$(echo "${appName}" | awk -F '[A-Z]_' '{print $2}' | sed 's/_/./g')
-  echo "App Version: ${appVersion}"
-  echo "Attempting to uninstall ${appName}"
-  "/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup" --uninstall=1 --sapCode="${appCode}" --productVersion="${appVersion}" --platform=osx10-64 --deleteUserPreferences=false
-done
-
-unset IFS
 }
 
 # Start
