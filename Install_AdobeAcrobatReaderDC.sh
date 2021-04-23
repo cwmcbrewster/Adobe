@@ -3,8 +3,8 @@
 # Automatically download and install the latest Acrobat Reader DC
 
 # Variables
-#currentVersion=$(curl -LSs "https://get.adobe.com/reader" | grep "id=\"buttonDownload1\"" | awk -F '\\?installer=' '{print $NF}' | awk -F "Reader_DC" '{print $NF}' | awk -F "_" '{print $2}' | sed 's/\.//g')
-currentVersion=$(curl -LSs "https://armmf.adobe.com/arm-manifests/mac/AcrobatDC/acrobat/current_version.txt" | sed 's/\.//g')
+currentVersion=$(curl -LSs "https://get.adobe.com/reader" | grep "id=\"buttonDownload1\"" | awk -F '\\?installer=' '{print $NF}' | awk -F "Reader_DC" '{print $NF}' | awk -F "_" '{print $2}' | sed 's/\.//g')
+#currentVersion=$(curl -LSs "https://armmf.adobe.com/arm-manifests/mac/AcrobatDC/acrobat/current_version.txt" | sed 's/\.//g')
 currentVersionShort=${currentVersion: -10}
 appName="Adobe Acrobat Reader DC.app"
 appProcessName="AdobeReader"
@@ -13,7 +13,7 @@ dmgVolumePath="/Volumes/AcroRdrDC_${currentVersionShort}_MUI"
 downloadUrl="https://ardownload2.adobe.com/pub/adobe/reader/mac/AcrobatDC/${currentVersionShort}"
 pkgName="AcroRdrDC_${currentVersionShort}_MUI.pkg"
 
-function processCheck {
+processCheck () {
   if [[ -n $(pgrep -x "${appProcessName}") ]]; then
     echo "${appProcessName} is currently running"
     echo "Aborting install"
@@ -23,11 +23,18 @@ function processCheck {
   fi
 }
 
-function tryDownload {
+tryDownload () {
   curl -LSs "${downloadUrl}/${dmgName}" -o "${tmpDir}/${dmgName}"
+  if [[ $? -eq 0 ]]; then
+    echo "Download successful"
+    tryDownloadState=1
+  else
+    echo "Download unsuccessful"
+    tryDownloadCounter=$((tryDownloadCounter+1))
+  fi
 }
 
-function versionCheck {
+versionCheck () {
   appPath="/Applications/${appName}"
 
   if [[ -d "${appPath}" ]]; then
@@ -54,23 +61,19 @@ echo "Temp dir set to ${tmpDir}"
 # List version
 versionCheck
 
-# Exit if app is running
-processCheck
-
-# Download DMG file into tmpDir
-tryDownload
-
-# Check curl exit code and try again in 30 seconds if it was not successful
-if [[ ! $? -eq 0 ]]; then
-  echo "Waiting 30 seconds to try again..."
-  sleep 30
+# Download DMG file into tmpDir (60 second timeout)
+echo "Starting download"
+tryDownloadState=0
+tryDownloadCounter=0
+while [[ ${tryDownloadState} -eq 0 && ${tryDownloadCounter} -le 60 ]]; do
   processCheck
   tryDownload
-fi
+  sleep 1
+done
 
 # Check for successful download
 if [[ ! -f "${tmpDir}/${dmgName}" ]]; then
-    echo "Download unsuccessful"
+    echo "Download failed"
     exit 1
 fi
 
@@ -78,6 +81,7 @@ fi
 hdiutil attach "${tmpDir}/${dmgName}" -nobrowse
 
 # Install package
+echo "Starting install"
 installer -pkg "${dmgVolumePath}/${pkgName}" -target /
 
 # Unmount DMG file
