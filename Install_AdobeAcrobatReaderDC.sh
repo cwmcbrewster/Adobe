@@ -1,11 +1,12 @@
 #!/bin/zsh
 
-# Automatically download and install the latest Acrobat Reader DC
+# Automatically download and install the latest Acrobat Reader
 
 # Variables
+#currentVersion=$(curl -LSs "https://get.adobe.com/reader" | grep "id=\"buttonDownload1\"" | awk -F '\\?installer=' '{print $NF}' | awk -F "Reader_DC" '{print $NF}' | awk -F "_" '{print $2}' | sed 's/\.//g')
 currentVersion=$(curl -LSs "https://armmf.adobe.com/arm-manifests/mac/AcrobatDC/acrobat/current_version.txt" | sed 's/\.//g')
 currentVersionShort=${currentVersion: -10}
-appName="Adobe Acrobat Reader DC.app"
+appName="Adobe Acrobat Reader.app"
 appPath="/Applications/${appName}"
 appProcessName="AdobeReader"
 dmgName="AcroRdrDC_${currentVersionShort}_MUI.dmg"
