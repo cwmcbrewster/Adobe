@@ -1,23 +1,18 @@
-#!/bin/bash
+#!/bin/zsh
 
 # uninstall adobe cc apps
 # loosly based on: https://maclabs.jazzace.ca/2020/11/01/unistalling-adobe-apps.html
 # and https://helpx.adobe.com/enterprise/admin-guide.html/enterprise/using/uninstall-creative-cloud-products.ug.html
 
-# Save current IFS state
-OLDIFS=${IFS}
+uninstallDir="/Library/Application Support/Adobe/Uninstall"
+setup="/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup"
 
 function removeAdobeApps {
-
-  uninstallDir="/Library/Application Support/Adobe/Uninstall"
-  setup="/Library/Application Support/Adobe/Adobe Desktop Common/HDBox/Setup"
 
   if [[ -d "${uninstallDir}" ]] && [[ -f "${setup}" ]]; then
     adobeAppList=$(find "${uninstallDir}" -type f -maxdepth 1 -name "*.adbarg")
 
-    IFS=$'\n'
-
-    for i in ${adobeAppList}; do
+    for i in ${(f)adobeAppList}; do
       if [[ -f "${i}" ]]; then
         appName=$(echo "${i}" | awk -F "/" '{print $NF}' | cut -d "." -f 1)
         echo "Attempting to uninstall ${appName}"
@@ -29,12 +24,10 @@ function removeAdobeApps {
       fi
     done
 
-    # Restore IFS to previous state
-    IFS=${OLDIFS}
   else
     echo "No Adobe apps found to uninstall"
   fi
-  
+
 }
 
 # Start
